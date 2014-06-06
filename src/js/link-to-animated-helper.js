@@ -77,6 +77,28 @@ Ember.onLoad('Ember.Handlebars', function(Handlebars) {
         params = [].slice.call(arguments, 0, -1),
         hash = options.hash;
 
+    // if (params[params.length - 1] instanceof Ember.QueryParams) {
+    //   hash.queryParamsObject = params.pop();
+    // }
+
+    hash.disabledBinding = hash.disabledWhen;
+
+    if (!options.fn) {
+      var linkTitle = params.shift();
+      var linkType = options.types.shift();
+      var context = this;
+      if (linkType === 'ID') {
+        options.linkTextPath = linkTitle;
+        options.fn = function() {
+          return EmberHandlebars.getEscaped(context, linkTitle, options);
+        };
+      } else {
+        options.fn = function() {
+          return linkTitle;
+        };
+      }
+    }
+
     Ember.assert("link-to-animated must contain animations", typeof(hash.animations) == 'string')
     var re = /\s*([a-z]+)\s*:\s*([a-z]+)/gi;
     var animations = {};
@@ -84,9 +106,6 @@ Ember.onLoad('Ember.Handlebars', function(Handlebars) {
       animations[match[1]] = match[2];
     }
     delete(hash.animations)
-    hash.namedRoute = name;
-    hash.currentWhen = hash.currentWhen || name;
-    hash.disabledBinding = hash.disabledWhen;
 
     hash.parameters = {
       context: this,
@@ -94,6 +113,8 @@ Ember.onLoad('Ember.Handlebars', function(Handlebars) {
       animations: animations,
       params: params
     };
+
+    options.helperName = options.helperName || 'link-to-animated';
 
     return Ember.Handlebars.helpers.view.call(this, AnimatedLinkView, options);
   });

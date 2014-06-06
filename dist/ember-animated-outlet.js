@@ -84,7 +84,7 @@ Ember.AnimatedContainerView = Ember.ContainerView.extend({
             if (oldView && effect) {
                 //If an effect is queued, then start the effect when the new view has been inserted in the DOM
                 this._isAnimating = true;
-                newView.on('didInsertElement', function() {
+                newView.one('didInsertElement', function() {
                     Ember.AnimatedContainerView._effects[effect](self, newView, oldView, function() {
                         Em.run(function() {
                             self.removeObject(oldView);
@@ -288,6 +288,28 @@ Ember.onLoad('Ember.Handlebars', function(Handlebars) {
         params = [].slice.call(arguments, 0, -1),
         hash = options.hash;
 
+    // if (params[params.length - 1] instanceof Ember.QueryParams) {
+    //   hash.queryParamsObject = params.pop();
+    // }
+
+    hash.disabledBinding = hash.disabledWhen;
+
+    if (!options.fn) {
+      var linkTitle = params.shift();
+      var linkType = options.types.shift();
+      var context = this;
+      if (linkType === 'ID') {
+        options.linkTextPath = linkTitle;
+        options.fn = function() {
+          return EmberHandlebars.getEscaped(context, linkTitle, options);
+        };
+      } else {
+        options.fn = function() {
+          return linkTitle;
+        };
+      }
+    }
+
     Ember.assert("link-to-animated must contain animations", typeof(hash.animations) == 'string')
     var re = /\s*([a-z]+)\s*:\s*([a-z]+)/gi;
     var animations = {};
@@ -295,9 +317,6 @@ Ember.onLoad('Ember.Handlebars', function(Handlebars) {
       animations[match[1]] = match[2];
     }
     delete(hash.animations)
-    hash.namedRoute = name;
-    hash.currentWhen = hash.currentWhen || name;
-    hash.disabledBinding = hash.disabledWhen;
 
     hash.parameters = {
       context: this,
@@ -305,6 +324,8 @@ Ember.onLoad('Ember.Handlebars', function(Handlebars) {
       animations: animations,
       params: params
     };
+
+    options.helperName = options.helperName || 'link-to-animated';
 
     return Ember.Handlebars.helpers.view.call(this, AnimatedLinkView, options);
   });
@@ -446,7 +467,7 @@ Ember.AnimatedContainerView.registerEffect('flip', function(ct, newView, oldView
     }, 0);
 });
 (function() {
-    
+
 var slide = function(ct, newView, oldView, callback, direction, slow) {
     var ctEl = ct.$(),
         newEl = newView.$(),
@@ -465,9 +486,7 @@ var slide = function(ct, newView, oldView, callback, direction, slow) {
             }
             ctEl.removeClass('ember-animated-container-slide-'+direction+'-ct-sliding');
             newEl.removeClass('ember-animated-container-slide-'+direction+'-new');
-            setTimeout(function() {
-                callback();
-            }, 0);
+            callback();
         }, duration);
     }, 0);
 };
@@ -491,7 +510,7 @@ Ember.AnimatedContainerView.registerEffect('slideDown', function(ct, newView, ol
 Ember.AnimatedContainerView.registerEffect('slowSlideLeft', function(ct, newView, oldView, callback) {
     slide(ct, newView, oldView, callback, 'left', true);
 });
-    
+
 Ember.AnimatedContainerView.registerEffect('slowSlideRight', function(ct, newView, oldView, callback) {
     slide(ct, newView, oldView, callback, 'right', true);
 });
@@ -505,6 +524,7 @@ Ember.AnimatedContainerView.registerEffect('slowSlideDown', function(ct, newView
 });
 
 })();
+
 (function() {
 
 var slideOver = function(ct, newView, oldView, callback, direction) {

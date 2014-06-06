@@ -4,7 +4,6 @@
 .ember-animated-container-slide-down-ct {
     @include transition-property(transform);
     @include transition-duration(0.4s);
-    @include transition-timing-function(ease-out);
     
     &.ember-animated-container-slide-slow-ct {
         @include transition-duration(2s);
